@@ -1,0 +1,18 @@
+base: Qwen/Qwen2.5-7B-Instruct
+task: sft
+
+data:
+  train: ./data/train.jsonl
+  format: alpaca
+  val_split: 0.0
+
+training:
+  epochs: 1
+  lr: 1.5e-4
+  batch_size: auto
+  lora:
+    r: 32
+    alpha: 64
+  quantization: 4bit
+
+output: ./output

@@ -1,0 +1,26 @@
+# Local fine-tune config — GTX 1050 Ti (4 GB, Pascal, compute 6.1)
+# Same synthetic dataset and eval; smaller base model so QLoRA fits in 4 GB.
+# 7B is NOT possible here: 4-bit weights alone are ~4.4 GB.
+# Validate without a GPU:  soup train --dry-run -c local-1.5b.yaml
+
+base: Qwen/Qwen2.5-1.5B-Instruct
+task: sft
+
+data:
+  train: ./data/train.jsonl
+  format: alpaca
+  val_split: 0.0
+  max_length: 768        # rows are ~500 tokens; shorter = less activation memory
+
+training:
+  epochs: 1
+  lr: 2e-4               # slightly higher LR is fine for a small model, 1 epoch
+  batch_size: 1
+  gradient_accumulation_steps: 8
+  gradient_checkpointing: auto
+  lora:
+    r: 16                # smaller rank = smaller optimizer state
+    alpha: 32
+  quantization: 4bit
+
+output: ./output-local

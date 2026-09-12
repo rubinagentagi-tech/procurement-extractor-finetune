@@ -1,0 +1,26 @@
+# Local fine-tune config — GTX 1050 Ti (4 GB, Pascal, compute 6.1), 3B variant
+# TIGHT: 4-bit 3B weights are ~2.2 GB, leaving little room for activations.
+# If this OOMs, drop data.max_length to 512 and/or use local-1.5b.yaml instead.
+# Validate without a GPU:  soup train --dry-run -c local-3b.yaml
+
+base: Qwen/Qwen2.5-3B-Instruct
+task: sft
+
+data:
+  train: ./data/train.jsonl
+  format: alpaca
+  val_split: 0.0
+  max_length: 640
+
+training:
+  epochs: 1
+  lr: 2e-4
+  batch_size: 1
+  gradient_accumulation_steps: 8
+  gradient_checkpointing: auto
+  lora:
+    r: 16
+    alpha: 32
+  quantization: 4bit
+
+output: ./output-local-3b

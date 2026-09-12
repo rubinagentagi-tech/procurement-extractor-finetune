@@ -52,7 +52,8 @@ The data in this repo is fictional, so sending it to a cloud GPU is safe.
 GPUs are third-party infrastructure. Real data stays on your own machine.
 
 ## What comes out
-- `output/adapter_model.safetensors` (LoRA, ~150 MB) + training log with loss
+- `output/adapter_model.safetensors` (LoRA, ~20 MB: 10.1M trainable params at fp16,
+  0.13% of the 7.6B base) + training log with loss
 - The eval table (baseline vs fine-tuned)
 - Optional: merged full model, or GGUF export for local chat
 

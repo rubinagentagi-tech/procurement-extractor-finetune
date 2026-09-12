@@ -107,6 +107,12 @@ class CDP:
         open(path, "wb").write(base64.b64decode(r["data"]))
         return path
 
+    def close(self):
+        try:
+            self.ws.close()
+        except Exception:
+            pass
+
 
 def ocr(path, psm="6"):
     subprocess.run(["tesseract", path, path + ".ocr", "--psm", psm], capture_output=True)

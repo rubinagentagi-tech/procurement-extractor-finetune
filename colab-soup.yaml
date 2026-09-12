@@ -5,11 +5,16 @@ data:
   train: ./data/train.jsonl
   format: alpaca
   val_split: 0.0
+  # Rows are ~500 tokens (p95 596, max 607). Soup's 2048 default OOM'd the
+  # T4 batch probe at batch_size=1; 1024 is generous and light.
+  max_length: 1024
 
 training:
   epochs: 1
   lr: 1.5e-4
-  batch_size: auto
+  batch_size: 1
+  gradient_accumulation_steps: 8
+  gradient_checkpointing: auto
   lora:
     r: 32
     alpha: 64

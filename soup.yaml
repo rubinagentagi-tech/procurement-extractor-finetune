@@ -9,11 +9,14 @@ data:
   train: ./data/train.jsonl
   format: alpaca
   val_split: 0.0        # pre-split files; validation handled by eval_check.py
+  max_length: 1024      # rows are ~500 tokens; 2048 (Soup default) OOM'd a 14.6 GB T4
 
 training:
   epochs: 2
   lr: 1.5e-4
   batch_size: auto
+  gradient_accumulation_steps: 8
+  gradient_checkpointing: auto
   lora:
     r: 32
     alpha: 64

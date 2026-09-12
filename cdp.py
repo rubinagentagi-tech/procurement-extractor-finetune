@@ -24,6 +24,7 @@ class CDP:
             raise RuntimeError("no page target")
         self.ws = wsc.connect(target["webSocketDebuggerUrl"], max_size=200 * 1024 * 1024, open_timeout=20)
         self.i = 0
+        self.events = []
 
     def send(self, method, **params):
         self.i += 1
@@ -36,7 +37,39 @@ class CDP:
                 if "error" in msg:
                     raise RuntimeError(f"{method}: {msg['error']}")
                 return msg.get("result", {})
+            if "method" in msg:
+                self.events.append(msg)
         raise TimeoutError(method)
+
+    def wait_event(self, method, timeout=20):
+        """Return the first captured (or newly arriving) event of `method`, else None."""
+        for e in self.events:
+            if e.get("method") == method:
+                return e
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            try:
+                msg = json.loads(self.ws.recv(timeout=max(0.5, deadline - time.time())))
+            except Exception:
+                break
+            if "method" in msg:
+                self.events.append(msg)
+                if msg["method"] == method:
+                    return msg
+        return None
+
+    def eval_obj(self, expr):
+        """Evaluate and return the remote object handle (for DOM.setFileInputFiles etc.)."""
+        r = self.send("Runtime.evaluate", expression=expr, returnByValue=False, awaitPromise=False)
+        return r.get("result", {})
+
+    def set_file_input(self, input_expr, path):
+        obj = self.eval_obj(input_expr)
+        oid = obj.get("objectId")
+        if not oid:
+            raise RuntimeError(f"no object handle for {input_expr}: {obj}")
+        self.send("DOM.setFileInputFiles", files=[path], objectId=oid)
+        return True
 
     def js(self, expr):
         r = self.send("Runtime.evaluate", expression=expr, returnByValue=True, awaitPromise=True)

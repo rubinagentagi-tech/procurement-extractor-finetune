@@ -3,3 +3,5 @@ __pycache__/
 output/
 *.safetensors
 *.gguf
+cdp.py
+colab_lib.py

@@ -1,5 +1,18 @@
 # Rented-GPU runbook (RunPod) — quote-reader fine-tune
 
+## STATUS — paused 2026-09-12, waiting on Rubin
+
+- **Colab run:** killed at step 150/250. Rescued and verified: `checkpoints/checkpoint-100`
+  (step 100, 131 MB, 112 LoRA tensors, optimizer + scheduler state).
+- **Blocked on two things:** a ~$10 top-up on the existing RunPod account (past due) and an API
+  key at `~/.config/runpod/api_key`.
+- **When ready, from `~/procurement-ft-trial`:**
+  `preflight` → `start` → `upload` → `run --epochs 1 --resume checkpoint-100` → `verify` →
+  `fetch` → `terminate`.
+- **Expected:** ~1-1.5 h, ~$1-1.5. Worst case inside the 3 h cap ≈ $2.5 — the pod stops itself.
+- **Already built and verified (18/18 checks):** `pod_job.sh` (self-stopping job),
+  `runpod_ft.py` (driver), `runpod_watchdog.py` (laptop cron, every 15 min).
+
 Written after the Colab run was killed at 60% on 2026-09-12. Every known failure mode from
 that run is addressed here; the ones that cannot be eliminated are named explicitly.
 

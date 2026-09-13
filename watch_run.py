@@ -20,7 +20,8 @@ LOG = "/tmp/colab-watch.log"
 CELLS = (5, 6, 7, 9)
 POLL_S = 45
 STALL_MIN = 25
-CAP_HOURS = 6
+CAP_HOURS = 8
+LAST_STEP = [None]  # last tqdm step seen; ground truth for liveness
 
 
 def ts():
@@ -49,12 +50,25 @@ def read_cells(c):
         except Exception as e:
             out[idx] = f"<error {e}>"
     running = c.js("document.querySelectorAll('.running').length")
+    step = None
+    try:
+        step = c.js('''(() => {
+          const cl = document.querySelectorAll('.cell')[5];
+          if (!cl) return null;
+          const t = cl.innerText || '';
+          const m = t.match(/(\\d+)\\/(\\d+) \\[/g);
+          if (!m) return null;
+          const last = m[m.length - 1].match(/(\\d+)\\//);
+          return last ? parseInt(last[1], 10) : null;
+        })()''')
+    except Exception:
+        step = None
     page = ""
     try:
         page = (c.js("document.body.innerText") or "")
     except Exception:
         pass
-    return out, int(running or 0), page
+    return out, int(running or 0), page, step
 
 
 BROKEN_MARKERS = [
@@ -101,7 +115,7 @@ page_fails = 0
 while (time.time() - start) / 3600 < CAP_HOURS:
     try:
         c = CDP()
-        out, running, page = read_cells(c)
+        out, running, page, step = read_cells(c)
         c.close()
         page_fails = 0
     except Exception as e:
@@ -116,7 +130,10 @@ while (time.time() - start) / 3600 < CAP_HOURS:
 
     lengths = {k: len(out.get(k, "")) for k in CELLS}
     total = sum(lengths.values())
-    log(f"running={running} lens={lengths}")
+    progressed = step is not None and (LAST_STEP[0] is None or step > LAST_STEP[0])
+    if progressed:
+        LAST_STEP[0] = step
+    log(f"running={running} step={step} progressed={progressed} lens={lengths}")
 
     if total != last_len:
         last_len, last_change = total, time.time()
@@ -142,7 +159,7 @@ while (time.time() - start) / 3600 < CAP_HOURS:
         finish("BROKEN_RUNTIME", out, f"page shows: {hit}", 6)
 
     # --- stall -----------------------------------------------------------
-    if running > 0 and (time.time() - last_change) / 60 > STALL_MIN:
+    if (running > 0 or progressed) and (time.time() - last_change) / 60 > STALL_MIN:
         finish("STALLED", out, f"no output growth for {STALL_MIN} min", 3)
 
     time.sleep(POLL_S)
